@@ -111,6 +111,17 @@ DATA_ROOT = Path(cli_args.dataset_path).expanduser().resolve()
 INDEX: list[dict] = []                      # [{id, media, annos}]
 IMG_CACHE: OrderedDict[Path, bytes] = OrderedDict()
 
+def resolve_data_path(relative_path: str | Path) -> Path:
+    """Resolve a dataset path without allowing symlink or parent traversal."""
+    if not isinstance(relative_path, (str, Path)):
+        raise ValueError('Dataset path must be text')
+    candidate = (DATA_ROOT / relative_path).resolve()
+    try:
+        candidate.relative_to(DATA_ROOT)
+    except ValueError as exc:
+        raise ValueError('Dataset path escapes the configured root') from exc
+    return candidate
+
 # ─── 標準加解密函式 (Fernet) ─────────────────────────────────────────────
 FERNET: Fernet | None = None
 PBKDF2_SALT = b"data_viewer_salt"
@@ -229,7 +240,7 @@ def preload(idx: int):
 def require_login():
     if not PASSWORD or BYPASS_LOGIN:
         return
-    if request.path.startswith('/static') or request.endpoint in ('login', 'api_encrypt', 'api_decrypt') or request.path.startswith('/file'):
+    if request.path.startswith('/static') or request.endpoint in ('login', 'api_encrypt', 'api_decrypt'):
         return
     if session.get('logged_in'):
         return
@@ -360,13 +371,21 @@ def api_item(idx: int):
 def api_save(idx: int):
     if idx < 0 or idx >= TOTAL:
         abort(404)
-    payload = request.get_json(force=True)
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        abort(400)
     ent     = INDEX[idx]
 
     # 1. annotation 協定儲存
     for row in payload.get('annotations', []):
-        path = DATA_ROOT / row['filename']
-        path.write_text(row['content'], encoding='utf-8')
+        try:
+            path = resolve_data_path(row['filename'])
+            content = row['content']
+            if not isinstance(content, str):
+                raise ValueError('Annotation content must be text')
+        except (KeyError, TypeError, ValueError):
+            abort(400)
+        path.write_text(content, encoding='utf-8')
         if path not in ent['annos']:
             ent['annos'].append(path)
 
@@ -399,8 +418,11 @@ def api_decrypt():
 
 @app.route('/file/<path:fname>')
 def serve_file(fname):
-    fp = DATA_ROOT / fname
-    if not fp.exists():
+    try:
+        fp = resolve_data_path(fname)
+    except ValueError:
+        abort(404)
+    if not fp.is_file():
         abort(404)
     if fp in IMG_CACHE:
         return send_file(io.BytesIO(IMG_CACHE[fp]),
