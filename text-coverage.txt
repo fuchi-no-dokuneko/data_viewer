@@ -1,0 +1,1 @@
+acceptance: mocked only external TTS and recorder commands; tests Flask, browser UI, filesystem persistence, authentication, templates, navigation, media previews, validation, screenshots, and report conversion.
