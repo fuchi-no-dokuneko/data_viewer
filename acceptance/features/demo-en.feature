@@ -1,21 +1,29 @@
 @demo @english @web
-Feature: English key-feature demonstration of the dataset viewer
+Feature: English product introduction for Dataset Annotator
 
-  Scenario: Review media and save its annotation
+  Scenario: Introduce a keyboard-first annotation review
     Given I begin a recorded demo
-    And the dataset viewer is running with a demonstration dataset
+    And a fresh acceptance dataset
+    And Dataset Annotator is running with a demonstration dataset
     When I open the web application at path "/"
-    And I narrate in "en-US" for at least 8 seconds:
+    And I narrate in "en-US" for at least 11 seconds:
       """
-      The dataset viewer keeps the media and its text annotations together, with keyboard navigation for moving through each item.
+      This is Dataset Annotator, a lightweight browser workspace for reviewing images, video, audio, or text beside their annotation files. The current item and its editable labels stay together on one screen.
       """
-    Then the current media name and annotation filename are visible
-    When I replace the caption with "reviewed demonstration caption"
-    And I move to the next item
-    And I return to the previous item
-    Then the caption contains "reviewed demonstration caption"
-    When I narrate in "en-US" for at least 8 seconds:
+    Then the current image, caption editor, and quick-label editor are visible
+    When I replace the caption with "a reviewed sample image"
+    And I enter quick label "ready"
+    And I pause for 2 seconds
+    And I press the "ArrowRight" key
+    And I narrate in "en-US" for at least 10 seconds:
       """
-      Saving is limited to the selected dataset directory, so a submitted parent path cannot overwrite files elsewhere on the computer.
+      The right arrow saves both edits and advances immediately. The left arrow returns, while the page number can jump directly to another item in a large dataset.
+      """
+    And I press the "ArrowLeft" key
+    Then the caption editor contains "a reviewed sample image"
+    And the quick-label editor contains "ready"
+    When I narrate in "en-US" for at least 10 seconds:
+      """
+      Saved annotations remain ordinary files inside the selected dataset directory. Directory mode can apply one quick label to a whole folder, and templates can keep reference metadata read-only or hidden.
       """
     Then I finish the recorded demo

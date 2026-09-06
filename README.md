@@ -160,3 +160,12 @@ secret_key: secret123
 透過 [Fernet](https://cryptography.io/en/latest/) 進行 AES 加解密。
 Fernet 金鑰透過 PBKDF2 以密碼推導，預設 100000 次迭代。
 若啟動時加入 `--no-login` 參數，則會略過登入流程。
+
+---
+
+## Acceptance testing
+
+`acceptance/` contains executable daily UAT plus timed English and Cantonese
+recording guides. The daily feature is suitable as a step-by-step checklist for
+a human or browser agent and produces JSON, Sonar generic test execution XML,
+and screenshot evidence. See `acceptance/README.md` for commands and coverage.
